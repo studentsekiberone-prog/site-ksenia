@@ -1,0 +1,563 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+    <title>Neon Password Strength | Проверка сложности пароля от человека</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', sans-serif;
+        }
+
+        body {
+            min-height: 100vh;
+            background: radial-gradient(circle at 20% 30%, #608778, #5e8f78, #718c7c);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 1.5rem;
+            position: relative;
+        }
+
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(105, 196, 149, 0.544);
+            backdrop-filter: blur(3px);
+            z-index: -1;
+        }
+
+        .glass-card {
+            max-width: 550px;
+            width: 100%;
+            background: rgba(79, 109, 69, 0.85);
+            backdrop-filter: blur(12px);
+            border-radius: 2rem;
+            padding: 2rem 1.8rem;
+            box-shadow: 0 25px 45px rgba(84, 149, 104, 0.15), 0 0 0 1px rgba(94, 123, 97, 0.2);
+            transition: all 0.3s ease;
+            border: 1px solid rgba(36, 94, 59, 0.4);
+        }
+
+        @media (max-width: 480px) {
+            .glass-card {
+                padding: 1.5rem 1.2rem;
+                border-radius: 1.5rem;
+            }
+        }
+
+        h1 {
+            font-size: 1.8rem;
+            font-weight: 600;
+            background: linear-gradient(135deg, #60b99b, #5b7154);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+            margin-bottom: 0.4rem;
+            letter-spacing: -0.3px;
+        }
+
+        .sub {
+            color: #58785c;
+            font-size: 0.85rem;
+            margin-bottom: 1.8rem;
+            border-left: 3px solid #5c7659;
+            padding-left: 0.75rem;
+            font-weight: 500;
+        }
+
+        .input-wrapper {
+            position: relative;
+            margin-bottom: 1.5rem;
+        }
+
+        .password-input {
+            width: 100%;
+            padding: 1rem 3rem 1rem 1.2rem;
+            font-size: 1rem;
+            background: #ffffff;
+            border: 1.5px solid #71a877;
+            border-radius: 1.2rem;
+            color: #7d8a64;
+            transition: all 0.25s ease;
+            outline: none;
+            font-weight: 500;
+            letter-spacing: 0.3px;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.02);
+        }
+
+        .password-input:focus {
+            border-color: #0288d1;
+            box-shadow: 0 0 0 3px rgba(2, 136, 209, 0.25);
+        }
+
+        .toggle-pwd {
+            position: absolute;
+            right: 1rem;
+            top: 50%;
+            transform: translateY(-50%);
+            background: none;
+            border: none;
+            cursor: pointer;
+            font-size: 1.4rem;
+            color: #0288d1;
+            transition: color 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 0.3rem;
+            z-index: 2;
+        }
+
+        .toggle-pwd:hover {
+            color: #01579b;
+        }
+
+        .strength-section {
+            margin-bottom: 1.8rem;
+        }
+
+        .strength-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: baseline;
+            margin-bottom: 0.6rem;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+        }
+
+        .strength-label {
+            font-size: 0.9rem;
+            font-weight: 500;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: #0277bd;
+        }
+
+        .strength-text {
+            font-weight: 700;
+            font-size: 1.1rem;
+            transition: color 0.2s ease, text-shadow 0.2s;
+        }
+
+        .progress-bar-bg {
+            background-color: #e1f5fe;
+            border-radius: 40px;
+            height: 10px;
+            width: 100%;
+            overflow: hidden;
+            box-shadow: inset 0 1px 3px rgba(0,0,0,0.1);
+        }
+
+        .progress-fill {
+            width: 0%;
+            height: 100%;
+            border-radius: 40px;
+            transition: width 0.35s cubic-bezier(0.2, 0.9, 0.4, 1.1), background-color 0.2s;
+            background-color: #ef4444;
+        }
+
+        .criteria-list {
+            background: rgba(255, 255, 255, 0.7);
+            border-radius: 1.2rem;
+            padding: 1rem 1.2rem;
+            margin: 1.8rem 0 1.8rem;
+            backdrop-filter: blur(4px);
+            border: 1px solid #b3e5fc;
+        }
+
+        .criteria-title {
+            font-size: 0.8rem;
+            font-weight: 600;
+            color: #0277bd;
+            margin-bottom: 1rem;
+            letter-spacing: 0.3px;
+            display: flex;
+            align-items: center;
+            gap: 0.4rem;
+        }
+
+        .criteria-grid {
+            display: flex;
+            flex-direction: column;
+            gap: 0.75rem;
+        }
+
+        .criterion {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            font-size: 0.9rem;
+            color: #01579b;
+            transition: all 0.2s;
+            padding: 0.2rem 0;
+        }
+
+        .criterion-icon {
+            font-size: 1.2rem;
+            width: 1.6rem;
+            text-align: center;
+            transition: transform 0.2s;
+        }
+
+        .criterion-text {
+            flex: 1;
+            transition: color 0.2s, text-decoration 0.2s;
+            font-weight: 500;
+        }
+
+        .criterion.valid .criterion-icon {
+            color: #2e7d32;
+            filter: drop-shadow(0 0 2px #66bb6a);
+        }
+
+        .criterion.valid .criterion-text {
+            color: #2e7d32;
+            text-decoration: line-through;
+            text-decoration-thickness: 1.5px;
+            text-decoration-color: #2e7d32;
+        }
+
+        .generate-btn {
+            width: 100%;
+            background: linear-gradient(95deg, #81d4fa, #4fc3f7);
+            border: 1px solid #0288d1;
+            padding: 0.9rem 1rem;
+            border-radius: 2rem;
+            font-weight: 700;
+            font-size: 0.95rem;
+            color: #01579b;
+            cursor: pointer;
+            transition: all 0.25s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            backdrop-filter: blur(4px);
+            margin-top: 0.4rem;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.05);
+        }
+
+        .generate-btn:hover {
+            border-color: #0277bd;
+            background: #4fc3f7;
+            color: #0a2f44;
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(2, 136, 209, 0.3);
+        }
+
+        .generate-btn:active {
+            transform: translateY(1px);
+        }
+
+        @keyframes subtlePulse {
+            0% { opacity: 0.7; transform: scale(0.98);}
+            100% { opacity: 1; transform: scale(1);}
+        }
+
+        .animate-update {
+            animation: subtlePulse 0.2s ease-out;
+        }
+
+        footer {
+            margin-top: 1.5rem;
+            text-align: center;
+            font-size: 0.7rem;
+            color: #0277bd;
+            font-weight: 500;
+        }
+        
+        @media (max-width: 480px) {
+            .glass-card {
+                padding: 1.4rem 1rem;
+            }
+            .criteria-list {
+                padding: 0.8rem 1rem;
+            }
+            .criterion-text {
+                font-size: 0.8rem;
+            }
+            .generate-btn {
+                padding: 0.7rem 1rem;
+            }
+            h1 {
+                font-size: 1.5rem;
+            }
+        }
+        
+        input:-webkit-autofill,
+        input:-webkit-autofill:focus {
+            transition: background-color 600000s 0s, color 600000s 0s;
+        }
+        
+        .criterion.valid .criterion-icon {
+            transform: scale(1.05);
+        }
+    </style>
+</head>
+<body>
+
+<div class="glass-card" id="app">
+    <h1>✦ PASSWORD METER</h1>
+    <div class="sub">надежность шифрования — в реальном времени</div>
+
+    <div class="input-wrapper">
+        <input type="password" id="passwordInput" class="password-input" placeholder="Введите пароль..." autocomplete="off">
+        <button class="toggle-pwd" id="toggleEye" aria-label="Показать/скрыть пароль" type="button">
+            👁️
+        </button>
+    </div>
+
+    <div class="strength-section">
+        <div class="strength-header">
+            <span class="strength-label">Сложность пароля</span>
+            <span class="strength-text" id="strengthText">—</span>
+        </div>
+        <div class="progress-bar-bg">
+            <div class="progress-fill" id="strengthBar"></div>
+        </div>
+    </div>
+
+    <div class="criteria-list">
+        <div class="criteria-title">
+            <span>🔒 Критерии безопасности</span>
+        </div>
+        <div class="criteria-grid" id="criteriaList">
+        </div>
+    </div>
+
+    <button class="generate-btn" id="generateBtn" type="button">
+        ⚡ Сгенерировать надежный пароль
+    </button>
+    <footer>минимум 8 символов • цифры • спецсимволы</footer>
+</div>
+
+<script>
+    const CRITERIA = [
+        { id: 'minLen', label: 'Минимум 8 символов', test: (pwd) => pwd.length >= 8 },
+        { id: 'uppercase', label: 'Заглавные буквы (A-Z)', test: (pwd) => /[A-Z]/.test(pwd) },
+        { id: 'lowercase', label: 'Строчные буквы (a-z)', test: (pwd) => /[a-z]/.test(pwd) },
+        { id: 'digits', label: 'Цифры (0-9)', test: (pwd) => /[0-9]/.test(pwd) },
+        { id: 'special', label: 'Специальные символы (!@#$%^&*)', test: (pwd) => /[!@#$%^&*]/.test(pwd) }
+    ];
+
+    const passwordInput = document.getElementById('passwordInput');
+    const toggleEye = document.getElementById('toggleEye');
+    const strengthTextEl = document.getElementById('strengthText');
+    const strengthBar = document.getElementById('strengthBar');
+    const criteriaContainer = document.getElementById('criteriaList');
+    const generateBtn = document.getElementById('generateBtn');
+
+    let isPasswordVisible = false;
+    let criteriaElements = [];
+
+    function buildCriteriaList() {
+        criteriaContainer.innerHTML = '';
+        criteriaElements = [];
+        CRITERIA.forEach((criterion) => {
+            const div = document.createElement('div');
+            div.className = 'criterion';
+            div.dataset.id = criterion.id;
+            
+            const iconSpan = document.createElement('span');
+            iconSpan.className = 'criterion-icon';
+            iconSpan.textContent = '◌';
+            const textSpan = document.createElement('span');
+            textSpan.className = 'criterion-text';
+            textSpan.textContent = criterion.label;
+            
+            div.appendChild(iconSpan);
+            div.appendChild(textSpan);
+            criteriaContainer.appendChild(div);
+            criteriaElements.push({
+                container: div,
+                icon: iconSpan,
+                text: textSpan,
+                testFn: criterion.test
+            });
+        });
+    }
+
+    function updateCriteriaStatus(password) {
+        let fulfilledCount = 0;
+        CRITERIA.forEach((criterion, idx) => {
+            const isValid = criterion.test(password);
+            const element = criteriaElements[idx];
+            if (isValid) {
+                element.container.classList.add('valid');
+                element.icon.textContent = '✔️';
+                fulfilledCount++;
+            } else {
+                element.container.classList.remove('valid');
+                element.icon.textContent = '◌';
+            }
+        });
+        return fulfilledCount;
+    }
+
+    function getStrengthLevel(fulfilledCount) {
+        if (fulfilledCount < 3) return { text: 'СЛАБЫЙ', color: '#d32f2f', widthPercent: (fulfilledCount / 5) * 100 };
+        if (fulfilledCount === 3 || fulfilledCount === 4) return { text: 'СРЕДНИЙ', color: '#f57c00', widthPercent: (fulfilledCount / 5) * 100 };
+        return { text: 'СИЛЬНЫЙ', color: '#2e7d32', widthPercent: 100 };
+    }
+
+    function updateStrengthMeter(password) {
+        const fulfilled = updateCriteriaStatus(password);
+        const level = getStrengthLevel(fulfilled);
+        
+        strengthTextEl.textContent = level.text;
+        strengthTextEl.style.color = level.color;
+        strengthTextEl.style.textShadow = `0 0 3px ${level.color}60`;
+        
+        let widthVal = level.widthPercent;
+        if (password.length === 0) widthVal = 0;
+        strengthBar.style.width = `${widthVal}%`;
+        strengthBar.style.backgroundColor = level.color;
+        
+        const barBg = document.querySelector('.progress-bar-bg');
+        if (barBg) {
+            barBg.classList.add('animate-update');
+            setTimeout(() => barBg.classList.remove('animate-update'), 250);
+        }
+        
+        strengthTextEl.classList.add('animate-update');
+        setTimeout(() => strengthTextEl.classList.remove('animate-update'), 200);
+        
+        if (level.text === 'СИЛЬНЫЙ') {
+            passwordInput.style.borderColor = '#2e7d32';
+            passwordInput.style.boxShadow = '0 0 0 2px rgba(46,125,50,0.25)';
+        } else if (level.text === 'СРЕДНИЙ') {
+            passwordInput.style.borderColor = '#f57c00';
+            passwordInput.style.boxShadow = '0 0 0 2px rgba(245,124,0,0.2)';
+        } else {
+            passwordInput.style.borderColor = '#d32f2f';
+            passwordInput.style.boxShadow = '0 0 0 2px rgba(211,47,47,0.15)';
+        }
+    }
+    
+    let debounceTimer;
+    function onPasswordInput() {
+        const pwd = passwordInput.value;
+        if (debounceTimer) clearTimeout(debounceTimer);
+        debounceTimer = setTimeout(() => {
+            updateStrengthMeter(pwd);
+        }, 20);
+    }
+    
+    function getRandomChar(charSet) {
+        const randomIndex = Math.floor(Math.random() * charSet.length);
+        return charSet[randomIndex];
+    }
+    
+    function generateSecurePassword() {
+        const lowerCase = 'abcdefghijklmnopqrstuvwxyz';
+        const upperCase = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+        const digits = '0123456789';
+        const special = '!@#$%^&*';
+        
+        let passwordArray = [];
+        passwordArray.push(getRandomChar(lowerCase));
+        passwordArray.push(getRandomChar(upperCase));
+        passwordArray.push(getRandomChar(digits));
+        passwordArray.push(getRandomChar(special));
+        
+        const allChars = lowerCase + upperCase + digits + special;
+        for (let i = 0; i < 8; i++) {
+            passwordArray.push(getRandomChar(allChars));
+        }
+        
+        for (let i = passwordArray.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [passwordArray[i], passwordArray[j]] = [passwordArray[j], passwordArray[i]];
+        }
+        
+        return passwordArray.join('');
+    }
+    
+    function handleGenerate() {
+        const strongPwd = generateSecurePassword();
+        passwordInput.value = strongPwd;
+        
+        // Сохраняем состояние видимости при генерации
+        if (isPasswordVisible) {
+            passwordInput.type = 'text';
+        } else {
+            passwordInput.type = 'password';
+        }
+        
+        updateStrengthMeter(strongPwd);
+        
+        const card = document.querySelector('.glass-card');
+        card.style.transform = 'scale(1.01)';
+        setTimeout(() => { card.style.transform = ''; }, 150);
+        passwordInput.focus();
+    }
+    
+    function togglePasswordVisibility() {
+        isPasswordVisible = !isPasswordVisible;
+        const currentPwd = passwordInput.value;
+        
+        if (isPasswordVisible) {
+            passwordInput.type = 'text';
+            toggleEye.textContent = '🙈';
+        } else {
+            passwordInput.type = 'password';
+            toggleEye.textContent = '👁️';
+        }
+        
+        // Сохраняем позицию курсора
+        setTimeout(() => {
+            const len = currentPwd.length;
+            passwordInput.setSelectionRange(len, len);
+        }, 0);
+    }
+    
+    function init() {
+        buildCriteriaList();
+        updateStrengthMeter('');
+        
+        passwordInput.addEventListener('input', onPasswordInput);
+        passwordInput.addEventListener('change', onPasswordInput);
+        
+        // Четкое назначение обработчика для кнопки глаза
+        toggleEye.addEventListener('click', function(e) {
+            e.preventDefault();
+            togglePasswordVisibility();
+        });
+        
+        generateBtn.addEventListener('click', function(e) {
+            e.preventDefault();
+            handleGenerate();
+        });
+        
+        strengthBar.style.width = '0%';
+        strengthBar.style.backgroundColor = '#d32f2f';
+        strengthTextEl.textContent = 'СЛАБЫЙ';
+        strengthTextEl.style.color = '#d32f2f';
+        passwordInput.style.borderColor = '#81d4fa';
+        
+        if (window.innerWidth <= 480) {
+            passwordInput.style.fontSize = '16px';
+        }
+        
+        const glass = document.querySelector('.glass-card');
+        glass.style.opacity = '0';
+        glass.style.transform = 'translateY(12px)';
+        setTimeout(() => {
+            glass.style.transition = 'all 0.4s ease-out';
+            glass.style.opacity = '1';
+            glass.style.transform = 'translateY(0)';
+        }, 20);
+    }
+    
+    init();
+</script>
+</body>
+</html>
